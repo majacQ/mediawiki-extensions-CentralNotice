@@ -6,34 +6,57 @@
 class TemplatePager extends ReverseChronologicalPager {
 	var $onRemoveChange, $viewPage, $special;
 	var $editable;
+	var $filter;
 
-	function __construct( $special ) {
+	function __construct( $special, $filter = '' ) {
 		$this->special = $special;
 		$this->editable = $special->editable;
+		$this->filter = $filter;
 		parent::__construct();
 
 		// Override paging defaults
 		list( $this->mLimit, /* $offset */ ) = $this->mRequest->getLimitOffset( 20, '' );
 		$this->mLimitsShown = array( 20, 50, 100 );
 
-		$msg = Xml::encodeJsVar( wfMsg( 'centralnotice-confirm-delete' ) );
+		$msg = Xml::encodeJsVar( $this->msg( 'centralnotice-confirm-delete' )->text() );
 		$this->onRemoveChange = "if( this.checked ) { this.checked = confirm( $msg ) }";
 		$this->viewPage = SpecialPage::getTitleFor( 'NoticeTemplate', 'view' );
 	}
 
 	/**
 	 * Set the database query to retrieve all the banners in the database
+	 *
 	 * @return array of query settings
 	 */
 	function getQueryInfo() {
+		$dbr = wfGetDB( DB_SLAVE );
+
+		// When the filter comes in it is space delimited, so break that...
+		$likeArray = preg_split( '/\s/', $this->filter );
+
+		// ...and then insert all the wildcards betwean search terms
+		if ( empty( $likeArray ) ) {
+			$likeArray = $dbr->anyString();
+		} else {
+			$anyStringToken = $dbr->anyString();
+			$tempArray = array( $anyStringToken );
+			foreach ( $likeArray as $likePart ) {
+				$tempArray[ ] = $likePart;
+				$tempArray[ ] = $anyStringToken;
+			}
+			$likeArray = $tempArray;
+		}
+
 		return array(
 			'tables' => 'cn_templates',
 			'fields' => array( 'tmp_name', 'tmp_id' ),
+			'conds'  => array( 'tmp_name' . $dbr->buildLike( $likeArray ) ),
 		);
 	}
 
 	/**
 	 * Sort the banner list by tmp_id (generally equals reverse chronological)
+	 *
 	 * @return string
 	 */
 	function getIndexField() {
@@ -43,10 +66,13 @@ class TemplatePager extends ReverseChronologicalPager {
 
 	/**
 	 * Generate the content of each table row (1 row = 1 banner)
+	 *
 	 * @param $row object: database row
+	 *
 	 * @return string HTML
 	 */
 	function formatRow( $row ) {
+		global $wgLanguageCode;
 
 		// Begin banner row
 		$htmlOut = Xml::openElement( 'tr' );
@@ -56,7 +82,7 @@ class TemplatePager extends ReverseChronologicalPager {
 			$htmlOut .= Xml::tags( 'td', array( 'valign' => 'top' ),
 				Xml::check( 'removeTemplates[]', false,
 					array(
-						'value' => $row->tmp_name,
+						'value'    => $row->tmp_name,
 						'onchange' => $this->onRemoveChange
 					)
 				)
@@ -66,19 +92,22 @@ class TemplatePager extends ReverseChronologicalPager {
 		// Link and Preview
 		$render = new SpecialBannerLoader();
 		$render->siteName = 'Wikipedia';
-		$render->language = $this->mRequest->getVal( 'wpUserLanguage' );
+		$render->language = $this->mRequest->getVal( 'wpUserLanguage', $wgLanguageCode );
 		try {
 			$preview = $render->getHtmlNotice( $row->tmp_name );
 		} catch ( SpecialBannerLoaderException $e ) {
-			$preview = wfMsg( 'centralnotice-nopreview' );
+			$preview = $this->msg( 'centralnotice-nopreview' )->text();
 		}
 		$htmlOut .= Xml::tags( 'td', array( 'valign' => 'top' ),
-			$this->getSkin()->makeLinkObj( $this->viewPage,
+			Linker::link(
+				$this->viewPage,
 				htmlspecialchars( $row->tmp_name ),
-				'template=' . urlencode( $row->tmp_name ) ) .
-			Xml::fieldset( wfMsg( 'centralnotice-preview' ),
+				array(),
+				array( 'template' => $row->tmp_name	)
+			) . Xml::fieldset(
+				$this->msg( 'centralnotice-preview' )->text(),
 				$preview,
-				array( 'class' => 'cn-bannerpreview')
+				array( 'class' => 'cn-bannerpreview' )
 			)
 		);
 
@@ -90,6 +119,7 @@ class TemplatePager extends ReverseChronologicalPager {
 
 	/**
 	 * Specify table headers
+	 *
 	 * @return string HTML
 	 */
 	function getStartBody() {
@@ -98,11 +128,11 @@ class TemplatePager extends ReverseChronologicalPager {
 		$htmlOut .= Xml::openElement( 'tr' );
 		if ( $this->editable ) {
 			$htmlOut .= Xml::element( 'th', array( 'align' => 'left', 'width' => '5%' ),
-				wfMsg ( 'centralnotice-remove' )
+				$this->msg( 'centralnotice-remove' )->text()
 			);
 		}
 		$htmlOut .= Xml::element( 'th', array( 'align' => 'left' ),
-			wfMsg ( 'centralnotice-templates' )
+			$this->msg( 'centralnotice-templates' )->text()
 		);
 		$htmlOut .= Xml::closeElement( 'tr' );
 		return $htmlOut;
@@ -110,17 +140,17 @@ class TemplatePager extends ReverseChronologicalPager {
 
 	/**
 	 * Close table and add Submit button
+	 *
 	 * @return string HTML
 	 */
 	function getEndBody() {
-		global $wgUser;
 		$htmlOut = '';
 		$htmlOut .= Xml::closeElement( 'table' );
 		if ( $this->editable ) {
-			$htmlOut .= Html::hidden( 'authtoken', $wgUser->editToken() );
+			$htmlOut .= Html::hidden( 'authtoken', $this->getUser()->getEditToken() );
 			$htmlOut .= Xml::tags( 'div',
 				array( 'class' => 'cn-buttons' ),
-				Xml::submitButton( wfMsg( 'centralnotice-modify' ) )
+				Xml::submitButton( $this->msg( 'centralnotice-modify' )->text() )
 			);
 		}
 		return $htmlOut;

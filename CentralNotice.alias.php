@@ -35,9 +35,40 @@ $specialPageAliases['arz'] = array(
 	'NoticeTemplate' => array( 'قالب_الملاحظة' ),
 );
 
-/** Breton (Brezhoneg) */
+/** Assamese (অসমীয়া) */
+$specialPageAliases['as'] = array(
+	'CentralNotice' => array( 'কেন্দ্ৰীয়_জাননী' ),
+	'CentralNoticeLogs' => array( 'কেন্দ্ৰীয়_জাননী_অভিলেখসমূহ' ),
+	'NoticeTemplate' => array( 'জাননী_সাঁচ' ),
+);
+
+/** Breton (brezhoneg) */
 $specialPageAliases['br'] = array(
 	'HideBanners' => array( 'KuzhatBanniel' ),
+);
+
+/** German (Deutsch) */
+$specialPageAliases['de'] = array(
+	'CentralNotice' => array( 'Zentrale_Mitteilung' ),
+	'CentralNoticeLogs' => array( 'Logbücher_zur_zentralen_Mitteilung' ),
+	'NoticeTemplate' => array( 'Mitteilungsvorlage' ),
+	'BannerAllocation' => array( 'Bannerverteilung' ),
+	'BannerController' => array( 'Bannersteuerung' ),
+	'BannerListLoader' => array( 'Bannerlisten_laden' ),
+	'BannerLoader' => array( 'Banner_laden' ),
+	'HideBanners' => array( 'Banner_ausblenden' ),
+);
+
+/** Zazaki (Zazaki) */
+$specialPageAliases['diq'] = array(
+	'CentralNotice' => array( 'MerkeziXeberdaren' ),
+	'CentralNoticeLogs' => array( 'MerkeziİlanêRocekan' ),
+	'NoticeTemplate' => array( 'ŞablonêXeberdaren' ),
+	'BannerAllocation' => array( 'TahsisêAfişan' ),
+	'BannerController' => array( 'KontrolkarêAfişan' ),
+	'BannerListLoader' => array( 'ListeyêAfişanBarkerden' ),
+	'BannerLoader' => array( 'BarkerdenêAfişan' ),
+	'HideBanners' => array( 'AfişanBınımnê' ),
 );
 
 /** Esperanto (Esperanto) */
@@ -63,7 +94,7 @@ $specialPageAliases['fa'] = array(
 	'HideBanners' => array( 'پنهان_کردن_نشان‌ها' ),
 );
 
-/** Galician (Galego) */
+/** Galician (galego) */
 $specialPageAliases['gl'] = array(
 	'CentralNotice' => array( 'Aviso_central' ),
 	'CentralNoticeLogs' => array( 'Rexistro_do_aviso_central' ),
@@ -91,7 +122,7 @@ $specialPageAliases['ht'] = array(
 	'BannerLoader' => array( 'ChajeAnsey' ),
 );
 
-/** Interlingua (Interlingua) */
+/** Interlingua (interlingua) */
 $specialPageAliases['ia'] = array(
 	'CentralNotice' => array( 'Aviso_central' ),
 	'CentralNoticeLogs' => array( 'Registro_de_aviso_central' ),
@@ -115,6 +146,23 @@ $specialPageAliases['ja'] = array(
 	'HideBanners' => array( 'バナーを隠す' ),
 );
 
+/** Georgian (ქართული) */
+$specialPageAliases['ka'] = array(
+	'HideBanners' => array( 'ბანერების_დამალვა' ),
+);
+
+/** Korean (한국어) */
+$specialPageAliases['ko'] = array(
+	'CentralNotice' => array( '중앙공지' ),
+	'CentralNoticeLogs' => array( '중앙공지기록' ),
+	'NoticeTemplate' => array( '알림틀', '공지틀' ),
+	'BannerAllocation' => array( '배너배정' ),
+	'BannerController' => array( '배너컨트롤러' ),
+	'BannerListLoader' => array( '배너목록열기', '배너목록로더' ),
+	'BannerLoader' => array( '배너열기', '배너로더' ),
+	'HideBanners' => array( '배너숨기기' ),
+);
+
 /** Ladino (Ladino) */
 $specialPageAliases['lad'] = array(
 	'CentralNotice' => array( 'AvisoCentral' ),
@@ -126,7 +174,7 @@ $specialPageAliases['lb'] = array(
 	'HideBanners' => array( 'Banner_verstoppen' ),
 );
 
-/** Macedonian (Македонски) */
+/** Macedonian (македонски) */
 $specialPageAliases['mk'] = array(
 	'CentralNotice' => array( 'ЦентралноИзвестување' ),
 	'CentralNoticeLogs' => array( 'ДневнициНаЦентралноИзвестување' ),
@@ -145,14 +193,16 @@ $specialPageAliases['ml'] = array(
 	'NoticeTemplate' => array( 'അറിയിപ്പ്ഫലകം' ),
 );
 
-/** Norwegian Bokmål (‪Norsk (bokmål)‬) */
+/** Norwegian Bokmål (norsk (bokmål)‎) */
 $specialPageAliases['nb'] = array(
 	'CentralNotice' => array( 'Sentralnotis' ),
+	'CentralNoticeLogs' => array( 'Sentralnotislogger' ),
 	'NoticeTemplate' => array( 'Notismal' ),
 	'BannerAllocation' => array( 'Bannerplassering' ),
 	'BannerController' => array( 'Bannerkontroll' ),
 	'BannerListLoader' => array( 'Bannerlistelaster' ),
 	'BannerLoader' => array( 'Bannerlaster' ),
+	'HideBanners' => array( 'Skjul_bannere' ),
 );
 
 /** Nedersaksisch (Nedersaksisch) */
@@ -178,7 +228,7 @@ $specialPageAliases['nl'] = array(
 	'HideBanners' => array( 'BannersVerbergen' ),
 );
 
-/** Norwegian Nynorsk (‪Norsk (nynorsk)‬) */
+/** Norwegian Nynorsk (norsk (nynorsk)‎) */
 $specialPageAliases['nn'] = array(
 	'CentralNotice' => array( 'Sentralmerknad' ),
 	'NoticeTemplate' => array( 'Merknadsmal' ),
@@ -186,20 +236,28 @@ $specialPageAliases['nn'] = array(
 
 /** Oriya (ଓଡ଼ିଆ) */
 $specialPageAliases['or'] = array(
-	'CentralNotice' => array( 'ମଝି‌_ସୂଚନା_ଫଳକ' ),
-	'CentralNoticeLogs' => array( 'ମଝି‌_ସୂଚନା_ଫଳକ_ଇତିହାସ' ),
-	'NoticeTemplate' => array( 'ସୂଚନା_ଛାଞ୍ଚ' ),
+	'CentralNotice' => array( 'ସୂଚନାଫଳକ' ),
+	'CentralNoticeLogs' => array( 'ସୂଚନାଫଳକଲଗ' ),
+	'NoticeTemplate' => array( 'ସୂଚନାଛାଞ୍ଚ' ),
 );
 
-/** Polish (Polski) */
+/** Polish (polski) */
 $specialPageAliases['pl'] = array(
 	'CentralNotice' => array( 'Globalny_komunikat' ),
 	'NoticeTemplate' => array( 'Szablon_komunikatu' ),
 );
 
+/** Tagalog (Tagalog) */
+$specialPageAliases['tl'] = array(
+	'CentralNotice' => array( 'Panggitnang_Pabatid' ),
+	'CentralNoticeLogs' => array( 'Mga_Pagtatala_ng_Panggitnang_Pabatid' ),
+	'NoticeTemplate' => array( 'Suleras_ng_Pabatid' ),
+);
+
 /** Turkish (Türkçe) */
 $specialPageAliases['tr'] = array(
 	'CentralNotice' => array( 'MerkeziBildirim' ),
+	'CentralNoticeLogs' => array( 'MerkeziBildirimGünlükleri' ),
 	'NoticeTemplate' => array( 'BildirimŞablonu' ),
 	'BannerAllocation' => array( 'AfişTahsisi' ),
 	'BannerController' => array( 'AfişKontrolü', 'AfişKontrolAracı' ),
@@ -208,9 +266,15 @@ $specialPageAliases['tr'] = array(
 	'HideBanners' => array( 'AfişleriGizle', 'AfişGizle' ),
 );
 
+/** Ukrainian (українська) */
+$specialPageAliases['uk'] = array(
+	'CentralNotice' => array( 'Загальне_оголошення' ),
+);
+
 /** Vietnamese (Tiếng Việt) */
 $specialPageAliases['vi'] = array(
 	'CentralNotice' => array( 'Thông_báo_chung' ),
+	'CentralNoticeLogs' => array( 'Nhật_trình_thông_báo_chung' ),
 	'NoticeTemplate' => array( 'Bản_mẫu_thông_báo' ),
 	'BannerAllocation' => array( 'Phân_bố_bảng' ),
 	'BannerController' => array( 'Điều_khiển_bảng' ),
@@ -219,7 +283,7 @@ $specialPageAliases['vi'] = array(
 	'HideBanners' => array( 'Ẩn_bảng' ),
 );
 
-/** Simplified Chinese (‪中文(简体)‬) */
+/** Simplified Chinese (中文（简体）‎) */
 $specialPageAliases['zh-hans'] = array(
 	'CentralNotice' => array( '中央通告' ),
 	'CentralNoticeLogs' => array( '中央通告日志' ),
@@ -231,7 +295,7 @@ $specialPageAliases['zh-hans'] = array(
 	'HideBanners' => array( '隐藏横幅' ),
 );
 
-/** Traditional Chinese (‪中文(繁體)‬) */
+/** Traditional Chinese (中文（繁體）‎) */
 $specialPageAliases['zh-hant'] = array(
 	'CentralNotice' => array( '中央通告' ),
 	'NoticeTemplate' => array( '通告模板' ),

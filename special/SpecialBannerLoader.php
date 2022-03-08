@@ -1,45 +1,65 @@
 <?php
-
 /**
- * Generates banner HTML files
+ * Renders banner (jsonp) contents.
+ *
+ * 
  */
 class SpecialBannerLoader extends UnlistedSpecialPage {
-	public $siteName = 'Wikipedia'; // Site name
-	public $language = 'en'; // User language
-
 	function __construct() {
 		// Register special page
 		parent::__construct( "BannerLoader" );
 	}
 
 	function execute( $par ) {
-		global $wgOut, $wgRequest;
-
-		$wgOut->disable();
-		$this->sendHeaders();
+		$this->getOutput()->disable();
 
 		// Get values from the query string
-		$this->language = $wgRequest->getText( 'userlang', 'en' );
-		$this->siteName = $wgRequest->getText( 'sitename', 'Wikipedia' );
-		$this->campaign = $wgRequest->getText( 'campaign', 'undefined' );
+		$request = $this->getRequest();
 
-		if ( $wgRequest->getText( 'banner' ) ) {
-			$bannerName = $wgRequest->getText( 'banner' );
-			try {
+		$this->project = $request->getText( 'project', 'wikipedia' );
+		$this->country = $request->getText( 'country', 'undefined' );
+		$this->language = $request->getText( 'userlang', 'en' );
+		$this->anonymous = $request->getText( 'anonymous', true );
+		$this->bucket = intval( $request->getText( 'bucket', '0' ) );
+
+		$this->siteName = $request->getText( 'sitename', 'Wikipedia' );
+		$this->campaign = $request->getText( 'campaign', 'undefined' );
+
+		$bannerName = false;
+
+		if ( $request->getText( 'banner' ) ) {
+			$bannerName = $request->getText( 'banner' );
+		} elseif ( $request->getText( 'slot' ) ) {
+			$slot = $request->getText( 'slot' );
+
+			$chooser = new BannerChooser(
+				$this->project,
+				$this->language,
+				$this->country,
+				$this->anonymous,
+				$this->bucket
+			);
+			$banner = $chooser->chooseBanner( $slot );
+
+			$bannerName = $banner['name'];
+			$this->campaign = $banner['campaign'];
+		}
+
+		$this->sendHeaders();
+
+		try {
+			if ( $bannerName ) {
 				$content = $this->getJsNotice( $bannerName );
-				if ( preg_match( "/&lt;centralnotice-template-\w+&gt;\z/", $content ) ) {
-					echo "/* Failed cache lookup */";
-				} elseif ( strlen( $content ) == 0 ) {
-					// Hack for IE/Mac 0-length keepalive problem, see RawPage.php
-					echo "/* Empty */";
-				} else {
-					echo $content;
-				}
-			} catch (SpecialBannerLoaderException $e) {
-				echo "/* Banner could not be generated */";
 			}
+		} catch ( SpecialBannerLoaderException $e ) {
+			wfDebugLog( 'CentralNotice', "Exception while loading banner: " . $e->getMessage() );
+		}
+
+		if ( $content ) {
+			echo $content;
 		} else {
-			echo "/* No banner specified */";
+			wfDebugLog( 'CentralNotice', "No content retrieved for banner: {$bannerName}" );
+			echo "/* Banner could not be generated */";
 		}
 	}
 
@@ -55,13 +75,15 @@ class SpecialBannerLoader extends UnlistedSpecialPage {
 
 	/**
 	 * Generate the JS for the requested banner
-	 * @return a string of Javascript containing a call to insertBanner()
+	 * @param $bannerName string
+	 * @return string of Javascript containing a call to insertBanner()
 	 *   with JSON containing the banner content as the parameter
-	 * @throws SpecialBannerLoaderException
+	 * @throw SpecialBannerLoaderException
 	 */
 	function getJsNotice( $bannerName ) {
 		// Make sure the banner exists
-		if ( CentralNoticeDB::bannerExists( $bannerName ) ) {
+		$cndb = new CentralNoticeDB();
+		if ( $cndb->bannerExists( $bannerName ) ) {
 			$this->bannerName = $bannerName;
 			$bannerHtml = '';
 			$bannerHtml .= preg_replace_callback(
@@ -89,7 +111,8 @@ class SpecialBannerLoader extends UnlistedSpecialPage {
 	 */
 	function getHtmlNotice( $bannerName ) {
 		// Make sure the banner exists
-		if ( CentralNoticeDB::bannerExists( $bannerName ) ) {
+		$cndb = new CentralNoticeDB();
+		if ( $cndb->bannerExists( $bannerName ) ) {
 			$this->bannerName = $bannerName;
 			$bannerHtml = '';
 			$bannerHtml .= preg_replace_callback(
@@ -114,14 +137,14 @@ class SpecialBannerLoader extends UnlistedSpecialPage {
 	 * Extract a message name and send to getMessage() for translation
 	 * If the field is 'amount', get the current fundraiser donation amount and pass it as a
 	 * parameter to the message.
-	 * @param $match A message array with 2 members: raw match, short name of message
-	 * @return translated messsage string
-	 * @throws SpecialBannerLoaderException
+	 * @param $match array A message array with 2 members: raw match, short name of message
+	 * @return string translated messsage string
+	 * @throw SpecialBannerLoaderException
 	 */
 	function getNoticeField( $match ) {
 		$field = $match[1];
 		$params = array();
-		
+
 		// Handle "magic messages"
 		switch ( $field ) {
 			case 'amount': // total fundraising amount
@@ -130,8 +153,14 @@ class SpecialBannerLoader extends UnlistedSpecialPage {
 			case 'daily-amount': // daily fundraising amount
 				$params = array( $this->toThousands( $this->getDailyDonationAmount() ) );
 				break;
+			case 'campaign': // campaign name
+				return( $this->campaign );
+				break;
+			case 'banner': // banner name
+				return( $this->bannerName );
+				break;
 		}
-		
+
 		$message = "centralnotice-{$this->bannerName}-$field";
 		$source = $this->getMessage( $message, $params );
 		return $source;
@@ -148,7 +177,7 @@ class SpecialBannerLoader extends UnlistedSpecialPage {
 		$lang = Language::factory( $this->language );
 		return $lang->formatNum( $num );
 	}
-	
+
 	/**
 	 * Convert number of dollars to thousands of dollars
 	 */
@@ -160,26 +189,20 @@ class SpecialBannerLoader extends UnlistedSpecialPage {
 
 	/**
 	 * Retrieve a translated message
-	 * @param $msg The full name of the message
-	 * @return translated messsage string
+	 * @param $msg string The full name of the message
+	 * @param $params array
+	 * @return string translated messsage string
 	 */
 	private function getMessage( $msg, $params = array() ) {
-		global $wgLang, $wgSitename;
+		global $wgSitename;
 
 		// A god-damned dirty hack! :D
-		$oldLang = $wgLang;
 		$oldSitename = $wgSitename;
-
 		$wgSitename = $this->siteName; // hack for {{SITENAME}}
-		$wgLang = Language::factory( $this->language ); // hack for {{int:...}}
 
-		$options = array( 'language' => $this->language, 'parsemag' );
-		array_unshift( $params, $options );
 		array_unshift( $params, $msg );
-		$out = call_user_func_array( 'wfMsgExt', $params );
+		$out = call_user_func_array( 'wfMessage', $params )->inLanguage( $this->language )->text();
 
-		// Restore global variables
-		$wgLang = $oldLang;
 		$wgSitename = $oldSitename;
 
 		return $out;
@@ -215,7 +238,7 @@ class SpecialBannerLoader extends UnlistedSpecialPage {
 		}
 		return $count;
 	}
-	
+
 	/**
 	 * Pull the amount raised so far today during a fundraiser
 	 * @throws SpecialBannerLoaderException

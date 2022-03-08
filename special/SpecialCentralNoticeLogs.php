@@ -1,43 +1,45 @@
 <?php
 
-if ( !defined( 'MEDIAWIKI' ) ) {
-	echo "CentralNotice extension\n";
-	exit( 1 );
-}
-
-class SpecialCentralNoticeLogs extends UnlistedSpecialPage {
+class SpecialCentralNoticeLogs extends CentralNotice {
 	public $logType = 'campaignsettings';
 
 	function __construct() {
 		// Register special page
-		parent::__construct( "CentralNoticeLogs" );
+		SpecialPage::__construct( "CentralNoticeLogs" );
+	}
+
+	public function isListed() {
+		return false;
 	}
 
 	/**
 	 * Handle different types of page requests
 	 */
 	function execute( $sub ) {
-		global $wgOut, $wgRequest, $wgExtensionAssetsPath;
+		global $wgExtensionAssetsPath;
 
-		$this->logType = $wgRequest->getText( 'log', 'campaignsettings' );
+		$out = $this->getOutput();
+		$request = $this->getRequest();
+
+		$this->logType = $request->getText( 'log', 'campaignsettings' );
 
 		// Begin output
 		$this->setHeaders();
 
 		// Output ResourceLoader module for styling and javascript functions
-		$wgOut->addModules( 'ext.centralNotice.interface' );
+		$out->addModules( 'ext.centralNotice.interface' );
 
 		// Initialize error variable
 		$this->centralNoticeError = false;
 
 		// Show summary
-		$wgOut->addWikiMsg( 'centralnotice-summary' );
+		$out->addWikiMsg( 'centralnotice-summary' );
 
 		// Show header
-		CentralNotice::printHeader();
+		$this->printHeader();
 
 		// Begin Banners tab content
-		$wgOut->addHTML( Xml::openElement( 'div', array( 'id' => 'preferences' ) ) );
+		$out->addHTML( Xml::openElement( 'div', array( 'id' => 'preferences' ) ) );
 
 		$htmlOut = '';
 
@@ -47,7 +49,7 @@ class SpecialCentralNoticeLogs extends UnlistedSpecialPage {
 		$title = SpecialPage::getTitleFor( 'CentralNoticeLogs' );
 		$actionUrl = $title->getLocalURL();
 		$htmlOut .= Xml::openElement( 'form', array( 'method' => 'get', 'action' => $actionUrl ) );
-		$htmlOut .= Xml::element( 'h2', null, wfMsg( 'centralnotice-view-logs' ) );
+		$htmlOut .= Xml::element( 'h2', null, $this->msg( 'centralnotice-view-logs' )->text() );
 		$htmlOut .= Xml::openElement( 'div', array( 'id' => 'cn-log-switcher' ) );
 		$title = SpecialPage::getTitleFor( 'CentralNoticeLogs' );
 		$fullUrl = wfExpandUrl( $title->getFullUrl(), PROTO_CURRENT );
@@ -66,31 +68,27 @@ class SpecialCentralNoticeLogs extends UnlistedSpecialPage {
 
 		if ( $this->logType == 'campaignsettings' ) {
 
-			$reset = $wgRequest->getVal( 'centralnoticelogreset' );
-			$campaign = $wgRequest->getVal( 'campaign' );
-			$user = $wgRequest->getVal( 'user' );
-			$startYear = $this->getDateValue( 'start_year' );
-			$startMonth = $this->getDateValue( 'start_month' );
-			$startDay = $this->getDateValue( 'start_day' );
-			$endYear = $this->getDateValue( 'end_year' );
-			$endMonth = $this->getDateValue( 'end_month' );
-			$endDay = $this->getDateValue( 'end_day' );
+			$reset = $request->getVal( 'centralnoticelogreset' );
+			$campaign = $request->getVal( 'campaign' );
+			$user = $request->getVal( 'user' );
+			$start = $this->getDateValue( 'start' );
+			$end = $this->getDateValue( 'end' );
 
 			$htmlOut .= Xml::openElement( 'div', array( 'id' => 'cn-log-filters-container' ) );
 
-			if ( $campaign || $user || $startYear || $startMonth || $startDay || $endYear || $endMonth || $endDay ) { // filters on
+			if ( $campaign || $user || $start || $end ) { // filters on
 				$htmlOut .= '<a href="javascript:toggleFilterDisplay()">'.
 					'<img src="'.$wgExtensionAssetsPath.'/CentralNotice/collapsed.png" id="cn-collapsed-filter-arrow" style="display:none;position:relative;top:-2px;"/>'.
 					'<img src="'.$wgExtensionAssetsPath.'/CentralNotice/uncollapsed.png" id="cn-uncollapsed-filter-arrow" style="display:inline-block;position:relative;top:-2px;"/>'.
 					'</a>';
-				$htmlOut .= Xml::tags( 'span', array( 'style' => 'margin-left: 0.3em;' ), wfMsg( 'centralnotice-filters' ) );
+				$htmlOut .= Xml::tags( 'span', array( 'style' => 'margin-left: 0.3em;' ), $this->msg( 'centralnotice-filters' )->escaped() );
 				$htmlOut .= Xml::openElement( 'div', array( 'id' => 'cn-log-filters' ) );
 			} else { // filters off
 				$htmlOut .= '<a href="javascript:toggleFilterDisplay()">'.
 					'<img src="'.$wgExtensionAssetsPath.'/CentralNotice/collapsed.png" id="cn-collapsed-filter-arrow" style="display:inline-block;position:relative;top:-2px;"/>'.
 					'<img src="'.$wgExtensionAssetsPath.'/CentralNotice/uncollapsed.png" id="cn-uncollapsed-filter-arrow" style="display:none;position:relative;top:-2px;"/>'.
 					'</a>';
-				$htmlOut .= Xml::tags( 'span', array( 'style' => 'margin-left: 0.3em;' ), wfMsg( 'centralnotice-filters' ) );
+				$htmlOut .= Xml::tags( 'span', array( 'style' => 'margin-left: 0.3em;' ), $this->msg( 'centralnotice-filters' )->escaped() );
 				$htmlOut .= Xml::openElement( 'div', array( 'id' => 'cn-log-filters', 'style' => 'display:none;' ) );
 			}
 
@@ -98,13 +96,13 @@ class SpecialCentralNoticeLogs extends UnlistedSpecialPage {
 			$htmlOut .= Xml::openElement( 'tr' );
 
 			$htmlOut .= Xml::openElement( 'td' );
-			$htmlOut .= Xml::label( wfMsg( 'centralnotice-start-date' ), 'month', array( 'class' => 'cn-log-filter-label' ) );
+			$htmlOut .= Xml::label( $this->msg( 'centralnotice-start-date' )->text(), 'month', array( 'class' => 'cn-log-filter-label' ) );
 			$htmlOut .= Xml::closeElement( 'td' );
 			$htmlOut .= Xml::openElement( 'td' );
 			if ( $reset ) {
-				$htmlOut .= $this->dateSelector( 'start' );
+				$htmlOut .= $this->dateSelector( 'start', true );
 			} else {
-				$htmlOut .= $this->dateSelector( 'start', $startYear, $startMonth, $startDay );
+				$htmlOut .= $this->dateSelector( 'start', true, $start );
 			}
 			$htmlOut .= Xml::closeElement( 'td' );
 
@@ -112,13 +110,13 @@ class SpecialCentralNoticeLogs extends UnlistedSpecialPage {
 			$htmlOut .= Xml::openElement( 'tr' );
 
 			$htmlOut .= Xml::openElement( 'td' );
-			$htmlOut .= Xml::label( wfMsg( 'centralnotice-end-date' ), 'month', array( 'class' => 'cn-log-filter-label' ) );
+			$htmlOut .= Xml::label( $this->msg( 'centralnotice-end-date' )->text(), 'month', array( 'class' => 'cn-log-filter-label' ) );
 			$htmlOut .= Xml::closeElement( 'td' );
 			$htmlOut .= Xml::openElement( 'td' );
 			if ( $reset ) {
-				$htmlOut .= $this->dateSelector( 'end' );
+				$htmlOut .= $this->dateSelector( 'end', true );
 			} else {
-				$htmlOut .= $this->dateSelector( 'end', $endYear, $endMonth, $endDay );
+				$htmlOut .= $this->dateSelector( 'end', true, $end );
 			}
 			$htmlOut .= Xml::closeElement( 'td' );
 
@@ -126,7 +124,7 @@ class SpecialCentralNoticeLogs extends UnlistedSpecialPage {
 			$htmlOut .= Xml::openElement( 'tr' );
 
 			$htmlOut .= Xml::openElement( 'td' );
-			$htmlOut .= Xml::label( wfMsg( 'centralnotice-notice' ), 'campaign', array( 'class' => 'cn-log-filter-label' ) );
+			$htmlOut .= Xml::label( $this->msg( 'centralnotice-notice' )->text(), 'campaign', array( 'class' => 'cn-log-filter-label' ) );
 			$htmlOut .= Xml::closeElement( 'td' );
 			$htmlOut .= Xml::openElement( 'td' );
 			$htmlOut .= Xml::input( 'campaign', 25, ( $reset ? '' : $campaign ) );
@@ -137,7 +135,11 @@ class SpecialCentralNoticeLogs extends UnlistedSpecialPage {
 			$htmlOut .= Xml::openElement( 'tr' );
 
 			$htmlOut .= Xml::openElement( 'td' );
-			$htmlOut .= Xml::label( wfMsg( 'centralnotice-user' ), 'user', array( 'class' => 'cn-log-filter-label' ) );
+			$htmlOut .= Xml::label(
+				$this->msg( 'centralnotice-user' )->text(),
+				'user',
+				array( 'class' => 'cn-log-filter-label' )
+			);
 			$htmlOut .= Xml::closeElement( 'td' );
 			$htmlOut .= Xml::openElement( 'td' );
 			$htmlOut .= Xml::input( 'user', 25, ( $reset ? '' : $user ) );
@@ -148,7 +150,7 @@ class SpecialCentralNoticeLogs extends UnlistedSpecialPage {
 			$htmlOut .= Xml::openElement( 'tr' );
 
 			$htmlOut .= Xml::openElement( 'td', array( 'colspan' => 2 ) );
-			$htmlOut .= Xml::submitButton( wfMsg( 'centralnotice-apply-filters' ),
+			$htmlOut .= Xml::submitButton( $this->msg( 'centralnotice-apply-filters' )->text(),
 				array(
 					'id' => 'centralnoticesubmit',
 					'name' => 'centralnoticesubmit',
@@ -156,7 +158,7 @@ class SpecialCentralNoticeLogs extends UnlistedSpecialPage {
 				)
 			);
 			$link = $title->getLinkUrl();
-			$htmlOut .= Xml::submitButton( wfMsg( 'centralnotice-clear-filters' ),
+			$htmlOut .= Xml::submitButton( $this->msg( 'centralnotice-clear-filters' )->text(),
 				array(
 					'id' => 'centralnoticelogreset',
 					'name' => 'centralnoticelogreset',
@@ -177,31 +179,34 @@ class SpecialCentralNoticeLogs extends UnlistedSpecialPage {
 		// End log selection fieldset
 		//$htmlOut .= Xml::closeElement( 'fieldset' );
 
-		$wgOut->addHTML( $htmlOut );
+		$out->addHTML( $htmlOut );
 
 		$this->showLog( $this->logType );
 
 		// End Banners tab content
-		$wgOut->addHTML( Xml::closeElement( 'div' ) );
+		$out->addHTML( Xml::closeElement( 'div' ) );
 	}
 
-	private function dateSelector( $prefix, $year = 0, $month = 0, $day = 0 ) {
-		$dateRanges = CentralNotice::getDateRanges();
-
-		$fields = array(
-			array( $prefix."_month", "centralnotice-month", $dateRanges['months'], $month ),
-			array( $prefix."_day",   "centralnotice-day",   $dateRanges['days'],   $day ),
-			array( $prefix."_year",  "centralnotice-year",  $dateRanges['years'],  $year ),
+	/**
+	 * Render a field suitable for jquery.ui datepicker
+	 */
+	protected function dateSelector( $prefix, $editable = true, $date = '' ) {
+		$out = Html::element( 'input',
+			array(
+				'id' => "{$prefix}Date",
+				'name' => "{$prefix}Date",
+				'type' => 'text',
+				'class' => 'centralnotice-datepicker',
+			)
 		);
-
-		$out = '';
-		foreach ( $fields as $data ) {
-			list( $field, $label, $set, $current ) = $data;
-			$out .= Xml::listDropDown( $field,
-				CentralNotice::dropDownList( wfMsg( $label ), $set ),
-				'',
-				$current );
-		}
+		$out .= Html::element( 'input',
+			array(
+				'id' => "{$prefix}Date_timestamp",
+				'name' => "{$prefix}Date_timestamp",
+				'type' => 'hidden',
+				'value' => $date,
+			)
+		);
 		return $out;
 	}
 
@@ -210,8 +215,6 @@ class SpecialCentralNoticeLogs extends UnlistedSpecialPage {
 	 * @param $logType string: which type of log to show
 	 */
 	function showLog( $logType ) {
-		global $wgOut;
-
 		switch ( $logType ) {
 			case 'bannersettings':
 				$pager = new CentralNoticeBannerLogPager( $this );
@@ -241,14 +244,19 @@ class SpecialCentralNoticeLogs extends UnlistedSpecialPage {
 		// End log fieldset
 		$htmlOut .= Xml::closeElement( 'fieldset' );
 
-		$wgOut->addHTML( $htmlOut );
+		$this->getOutput()->addHTML( $htmlOut );
 	}
 
-	static function getDateValue( $type ) {
-		global $wgRequest;
-		$value = $wgRequest->getVal( $type );
-		if ( $value === 'other' ) $value = null;
-		return $value;
+	/**
+	 * Returns the jquery.ui datepicker value, or null if the field is blank.
+	 */
+	public function getDateValue( $name ) {
+		$manual_entry = $this->getRequest()->getVal( "{$name}Date" );
+		if ( !$manual_entry ) {
+			return null;
+		}
+
+		return $this->getRequest()->getVal( "{$name}Date_timestamp" );
 	}
 
 	/**
@@ -262,8 +270,7 @@ class SpecialCentralNoticeLogs extends UnlistedSpecialPage {
 			( $this->logType == $type ? true : false ),
 			array( 'onclick' => "switchLogs( '".$fullUrl."', '".$type."' )" )
 		);
-		$htmlOut .= Xml::label( wfMsg( $message ), $id );
+		$htmlOut .= Xml::label( $this->msg( $message )->text(), $id );
 		return $htmlOut;
 	}
-
 }

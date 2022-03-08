@@ -12,6 +12,10 @@
 	padding: 1em;
 	border-top: 1px solid;
 }
+/* XXX: uncollapse */
+#preferences fieldset.prefsection.collapsed {
+	display: none;
+}
 #preferences fieldset.prefsection:first-child {
 	border-top: none;
 }
@@ -50,8 +54,7 @@
 	margin-left:0.25em;
 }
 #preferences fieldset.prefsection fieldset.cn-bannerpreview {
-	border-style: solid;
-	border-width: 1px;
+	border: 1px solid;
 }
 #preferences div#fundraisingInterface {
 	margin-left:1.6em;
@@ -84,6 +87,36 @@
 }
 #preferences #cn-log-switcher label {
 	margin-right: 1em;
+}
+#preferences #cn-template-searchbox {
+    border: 1px solid #CCCCCC;
+    line-height: 1.5em;
+    margin: 1em 0;
+    padding: 0 1em 1em;
+    display: block;
+}
+#preferences #cn-template-searchbox legend {
+    font-size: 95%;
+    color: black;
+}
+#preferences #cn-template-searchbox label,input {
+    margin-right: 0.25em;
+}
+
+.banner-editing-top-hint {
+	margin-bottom: 0.2em;
+	/* Leaving room for the background image. */
+	padding-left: 17px !important;
+	/* @embed */
+	background: url('down-arrow-ltr.png') no-repeat scroll left center transparent;
+}
+
+.select-hint {
+	margin-top: 0.2em;
+	/* Leaving room for the background image. */
+	padding-left: 17px !important;
+	/* @embed */
+	background: url('up-arrow-ltr.png') no-repeat scroll left top transparent;
 }
 
 /* Vector-specific definitions */

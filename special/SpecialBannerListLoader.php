@@ -1,79 +1,46 @@
 <?php
+// FIXME deprecated in so many ways... assuming we will merge the Api patch here:
+// can be deleted once the bannerController module is updated and purged.
 
-/**
- * Generates JSON files listing all the banners for a particular site
- */
 class SpecialBannerListLoader extends UnlistedSpecialPage {
-	public $project; // Project name
-	public $language; // Project language
-	public $location; // User country
-	protected $sharedMaxAge = 300; // Cache for 5 minutes on the server side
-	protected $maxAge = 300; // Cache for 5 minutes on the client side
-
-	function __construct() {
-		// Register special page
-		parent::__construct( "BannerListLoader" );
+	public function __construct() {
+		parent::__construct( 'BannerListLoader' );
 	}
 
-	function execute( $par ) {
-		global $wgOut, $wgRequest;
-
-		$wgOut->disable();
+	public function execute( $par ) {
+		// Set up for JSON output. As of 1.20 a special page is apparently faster than an API
+		// call
+		$this->getOutput()->disable();
 		$this->sendHeaders();
 
-		// Get project language from the query string
-		$this->language = $wgRequest->getText( 'language', 'en' );
+		$bannerList = ApiCentralNoticeAllocations::getAllocationInformation(
+			$this->getRequest()->getText('project'),
+			$this->getRequest()->getText('country'),
+			$this->getRequest()->getText('language'),
+			$this->getRequest()->getText('anonymous'),
+			$this->getRequest()->getText('bucket'),
+			true
+		);
 
-		// Get project name from the query string
-		$this->project = $wgRequest->getText( 'project', 'wikipedia' );
+		$output = array();
+		$output['centralnoticeallocations']['banners'] = $bannerList;
 
-		// Get location from the query string
-		$this->location = $wgRequest->getText( 'country' );
-
-		if ( $this->project && $this->language ) {
-			$content = $this->getJsonList();
-			if ( strlen( $content ) == 0 ) {
-				// Hack for IE/Mac 0-length keepalive problem, see RawPage.php
-				echo "/* Empty */";
-			} else {
-				echo $content;
-			}
-		} else {
-			echo "/* No site specified */";
-		}
+		print FormatJson::encode( $output );
 	}
 
-	/**
-	 * Generate the HTTP response headers for the banner file
-	 */
-	function sendHeaders() {
-		global $wgJsMimeType;
-		header( "Content-type: $wgJsMimeType; charset=utf-8" );
-		header( "Cache-Control: public, s-maxage=$this->sharedMaxAge, max-age=$this->maxAge" );
+	protected function sendHeaders() {
+		global $wgJsMimeType, $wgNoticeBannerMaxAge;
+
+		// Set the cache control
+		$this->getRequest()->response()->header(
+			"Cache-Control: public, s-maxage=$wgNoticeBannerMaxAge, max-age=$wgNoticeBannerMaxAge",
+			true
+		);
+
+		// And the datatype
+		$this->getRequest()->response()->header(
+			"Content-type: $wgJsMimeType; charset=utf-8",
+			true
+		);
 	}
-
-	/**
-	 * Generate JSON for the specified site
-	 */
-	function getJsonList() {
-		$banners = array();
-
-		// See if we have any preferred campaigns for this language and project
-		$campaigns = CentralNoticeDB::getCampaigns( $this->project, $this->language, null, 1, 1, $this->location );
-
-		// Quick short circuit to show preferred campaigns
-		if ( $campaigns ) {
-			// Pull banners
-			$banners = CentralNoticeDB::getCampaignBanners( $campaigns );
-		}
-
-		// Didn't find any preferred banners so do an old style lookup
-		if ( !$banners )  {
-			$banners = CentralNoticeDB::getBannersByTarget(
-				$this->project, $this->language, $this->location );
-		}
-
-		return FormatJson::encode( $banners );
-	}
-
 }

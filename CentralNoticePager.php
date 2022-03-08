@@ -3,28 +3,54 @@
 class CentralNoticePager extends TemplatePager {
 	var $viewPage, $special;
 	var $editable;
+	var $filter;
 
-	function __construct( $special ) {
-		parent::__construct( $special );
+	function __construct( $special, $filter = '' ) {
+		parent::__construct( $special, $filter );
 	}
 
 	/**
 	 * Pull banners from the database
 	 */
 	function getQueryInfo() {
+		$dbr = wfGetDB( DB_SLAVE );
+
+		// First we must construct the filter before we pull banners
+		// When the filter comes in it is space delimited, so break that...
+		$likeArray = preg_split( '/\s/', $this->filter );
+
+		// ...and then insert all the wildcards betwean search terms
+		if ( empty( $likeArray ) ) {
+			$likeArray = $dbr->anyString();
+		} else {
+			$anyStringToken = $dbr->anyString();
+			$tempArray = array( $anyStringToken );
+			foreach ( $likeArray as $likePart ) {
+				$tempArray[ ] = $likePart;
+				$tempArray[ ] = $anyStringToken;
+			}
+			$likeArray = $tempArray;
+		}
+
+		// Get the current campaign and filter on that as well if required
 		$notice = $this->mRequest->getVal( 'notice' );
-		$noticeId = CentralNotice::getNoticeId( $notice );
+		$cndb = new CentralNoticeDB();
+		$noticeId = $cndb->getNoticeId( $notice );
+
 		if ( $noticeId ) {
 			// Return all the banners not already assigned to the current campaign
 			return array(
-				'tables' => array( 'cn_assignments', 'cn_templates' ),
-				'fields' => array( 'cn_templates.tmp_name', 'cn_templates.tmp_id' ),
-				'conds' => array( 'cn_assignments.tmp_id IS NULL' ),
+				'tables'     => array( 'cn_assignments', 'cn_templates' ),
+				'fields'     => array( 'cn_templates.tmp_name', 'cn_templates.tmp_id' ),
+				'conds'      => array(
+					'cn_assignments.tmp_id IS NULL',
+					'tmp_name' . $dbr->buildLike( $likeArray )
+				),
 				'join_conds' => array(
 					'cn_assignments' => array(
 						'LEFT JOIN',
 						"cn_assignments.tmp_id = cn_templates.tmp_id " .
-						"AND cn_assignments.not_id = $noticeId"
+							"AND cn_assignments.not_id = $noticeId"
 					)
 				)
 			);
@@ -33,6 +59,7 @@ class CentralNoticePager extends TemplatePager {
 			return array(
 				'tables' => 'cn_templates',
 				'fields' => array( 'tmp_name', 'tmp_id' ),
+				'conds'  => array( 'tmp_name' . $dbr->buildLike( $likeArray ) ),
 			);
 		}
 	}
@@ -41,6 +68,7 @@ class CentralNoticePager extends TemplatePager {
 	 * Generate the content of each table row (1 row = 1 banner)
 	 */
 	function formatRow( $row ) {
+		global $wgLanguageCode;
 
 		// Begin banner row
 		$htmlOut = Xml::openElement( 'tr' );
@@ -48,14 +76,14 @@ class CentralNoticePager extends TemplatePager {
 		if ( $this->editable ) {
 			// Add box
 			$htmlOut .= Xml::tags( 'td', array( 'valign' => 'top' ),
-				Xml::check( 'addTemplates[]', '', array ( 'value' => $row->tmp_name ) )
+				Xml::check( 'addTemplates[]', '', array( 'value' => $row->tmp_name ) )
 			);
 			// Weight select
 			$htmlOut .= Xml::tags( 'td', array( 'valign' => 'top' ),
 				Xml::listDropDown( "weight[$row->tmp_id]",
 					CentralNotice::dropDownList(
-						wfMsg( 'centralnotice-weight' ), range ( 0, 100, 5 )
-					) ,
+						$this->msg( 'centralnotice-weight' )->text(), range( 0, 100, 5 )
+					),
 					'',
 					'25',
 					'',
@@ -66,19 +94,22 @@ class CentralNoticePager extends TemplatePager {
 		// Link and Preview
 		$render = new SpecialBannerLoader();
 		$render->siteName = 'Wikipedia';
-		$render->language = $this->mRequest->getVal( 'wpUserLanguage' );
+		$render->language = $this->mRequest->getVal( 'wpUserLanguage', $wgLanguageCode );
 		try {
 			$preview = $render->getHtmlNotice( $row->tmp_name );
 		} catch ( SpecialBannerLoaderException $e ) {
-			$preview = wfMsg( 'centralnotice-nopreview' );
+			$preview = $this->msg( 'centralnotice-nopreview' )->text();
 		}
 		$htmlOut .= Xml::tags( 'td', array( 'valign' => 'top' ),
-			$this->getSkin()->makeLinkObj( $this->viewPage,
+			Linker::link(
+				$this->viewPage,
 				htmlspecialchars( $row->tmp_name ),
-				'template=' . urlencode( $row->tmp_name ) ) .
-			Xml::fieldset( wfMsg( 'centralnotice-preview' ),
+				array(),
+				array( 'template' => $row->tmp_name )
+			) . Xml::fieldset(
+				$this->msg( 'centralnotice-preview' )->text(),
 				$preview,
-				array( 'class' => 'cn-bannerpreview')
+				array( 'class' => 'cn-bannerpreview' )
 			)
 		);
 
@@ -90,6 +121,8 @@ class CentralNoticePager extends TemplatePager {
 
 	/**
 	 * Specify table headers
+	 *
+	 * @return string
 	 */
 	function getStartBody() {
 		$htmlOut = '';
@@ -97,14 +130,14 @@ class CentralNoticePager extends TemplatePager {
 		$htmlOut .= Xml::openElement( 'tr' );
 		if ( $this->editable ) {
 			$htmlOut .= Xml::element( 'th', array( 'align' => 'left', 'width' => '5%' ),
-				 wfMsg ( "centralnotice-add" )
+				$this->msg( "centralnotice-add" )->text()
 			);
 			$htmlOut .= Xml::element( 'th', array( 'align' => 'left', 'width' => '5%' ),
-				 wfMsg ( "centralnotice-weight" )
+				$this->msg( 'centralnotice-weight' )->text()
 			);
 		}
 		$htmlOut .= Xml::element( 'th', array( 'align' => 'left' ),
-			wfMsg ( 'centralnotice-templates' )
+			$this->msg( 'centralnotice-templates' )->text()
 		);
 		$htmlOut .= Xml::closeElement( 'tr' );
 		return $htmlOut;
@@ -112,10 +145,10 @@ class CentralNoticePager extends TemplatePager {
 
 	/**
 	 * Close table
+	 *
+	 * @return string
 	 */
 	function getEndBody() {
-		$htmlOut = '';
-		$htmlOut .= Xml::closeElement( 'table' );
-		return $htmlOut;
+		return Xml::closeElement( 'table' );
 	}
 }
