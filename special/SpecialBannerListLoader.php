@@ -1,5 +1,6 @@
 <?php
 // FIXME deprecated in so many ways... assuming we will merge the Api patch here:
+// can be deleted once the bannerController module is updated and purged.
 
 class SpecialBannerListLoader extends UnlistedSpecialPage {
 	public function __construct() {

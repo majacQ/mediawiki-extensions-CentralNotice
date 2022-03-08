@@ -43,7 +43,7 @@ class CentralNoticeDB {
 			$encTimestamp = $dbr->addQuotes( $dbr->timestamp() );
 		}
 
-		$tables = array( 'cn_notices' );
+		$tables = array( 'notices' => 'cn_notices' );
 		$conds = array(
 			"not_start <= $encTimestamp",
 			"not_end >= $encTimestamp",
@@ -55,17 +55,17 @@ class CentralNoticeDB {
 
 		// common components: cn_notice_projects
 		if ( $project ) {
-			$tables[ ] = 'cn_notice_projects';
+			$tables[ 'notice_projects' ] = 'cn_notice_projects';
 
-			$conds[ ] = 'np_notice_id = cn_notices.not_id';
+			$conds[ ] = 'np_notice_id = notices.not_id';
 			$conds[ 'np_project' ] = $project;
 		}
 
 		// common components: language
 		if ( $language ) {
-			$tables[ ] = 'cn_notice_languages';
+			$tables[ 'notice_languages' ] = 'cn_notice_languages';
 
-			$conds[ ] = 'nl_notice_id = cn_notices.not_id';
+			$conds[ ] = 'nl_notice_id = notices.not_id';
 			$conds[ 'nl_language' ] = $language;
 		}
 
@@ -84,10 +84,10 @@ class CentralNoticeDB {
 
 		// If a location is passed, also pull geotargeted campaigns that match the location
 		if ( $location ) {
-			$tables[ ] = 'cn_notice_countries';
+			$tables[ 'cnotice_countries' ] = 'cn_notice_countries';
 
 			$conds[ 'not_geo' ] = 1;
-			$conds[ ] = 'nc_notice_id = cn_notices.not_id';
+			$conds[ ] = 'nc_notice_id = notices.not_id';
 			$conds[ 'nc_country' ] = $location;
 
 			// Pull the notice IDs

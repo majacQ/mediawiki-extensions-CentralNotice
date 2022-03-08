@@ -203,10 +203,16 @@ class SpecialBannerAllocation extends CentralNotice {
 	public function showList() {
 		// Obtain all banners & campaigns
 		$request = $this->getRequest();
+  <<<<<<< sandbox/VarnishEndpoint
+		$project = $request->getText('project');
+		$country = $request->getText('country');
+		$language = $request->getText('language');
+  =======
 		$project = $this->getMulti('project');
 		$country = $this->getMulti('country');
 		$language = $this->getMulti('language');
 error_log(var_export($this->language, TRUE));
+  >>>>>>> sandbox/adamw/dynamic_allocations_matrix
 
 		// Begin building HTML
 		$htmlOut = '';
@@ -231,6 +237,15 @@ error_log(var_export($this->language, TRUE));
 		//$js = "wgCentralNoticeAllocationCampaigns = $campaignList;";
 		//$htmlOut .= Html::inlineScript( $js );
 
+  <<<<<<< sandbox/VarnishEndpoint
+		// FIXME matrix is chosen dynamically based on more UI inputs
+		$matrix = array(
+			array( 'anonymous' => 'true', 'bucket' => '0' ),
+			array( 'anonymous' => 'true', 'bucket' => '1' ),
+			array( 'anonymous' => 'false', 'bucket' => '0' ),
+			array( 'anonymous' => 'false', 'bucket' => '1' ),
+		);
+  =======
 		$matrix_split = function ( &$matrix, $key, $values ) {
 			$out = array();
 			foreach ( $matrix as $row ) {
@@ -245,6 +260,7 @@ error_log(var_export($this->language, TRUE));
 		$matrix_split( $matrix, 'bucket', array( '0', '1' ) );
 		$matrix_split( $matrix, 'language', $this->language );
 
+  >>>>>>> sandbox/adamw/dynamic_allocations_matrix
 		foreach ( $matrix as $target ) {
 			$banners = ApiCentralNoticeAllocations::getAllocationInformation(
 				$project,
