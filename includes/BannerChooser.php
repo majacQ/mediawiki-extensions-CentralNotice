@@ -75,9 +75,12 @@ class BannerChooser {
 				return ( $banner[ 'bucket' ] === intval( $bucket ) );
 			}
 		);
+  <<<<<<< sandbox/VarnishEndpoint
 
 		// Reset the keys
 		$this->banners = array_values( $this->banners );
+  =======
+  >>>>>>> sandbox/adamw/dynamic_allocations_matrix
 	}
 
 	// note: lumps all campaigns weights together according to absolute proportions of total.

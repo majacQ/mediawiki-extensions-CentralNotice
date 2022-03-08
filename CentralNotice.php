@@ -415,7 +415,14 @@ function efResourceLoaderGetConfigVars( &$vars ) {
 	global $wgNoticeFundraisingUrl, $wgContLang,
 		$wgNoticeInfrastructure, $wgNoticeCloseButton, $wgCentralBannerDispatcher;
 	$vars[ 'wgNoticeFundraisingUrl' ] = $wgNoticeFundraisingUrl;
+  <<<<<<< sandbox/VarnishEndpoint
 	$vars[ 'wgCentralBannerDispatcher' ] = $wgCentralBannerDispatcher;
+  =======
+	$vars[ 'wgCentralPagePath' ] = $wgCentralPagePath;
+
+	// Get the localized title of the BannerListLoader special page
+	$vars[ 'wgNoticeBannerListLoader' ] = $wgContLang->specialPage( 'BannerListLoader' );
+  >>>>>>> sandbox/adamw/dynamic_allocations_matrix
 
 	if ( $wgNoticeInfrastructure ) {
 		$vars[ 'wgNoticeCloseButton' ] = $wgNoticeCloseButton;

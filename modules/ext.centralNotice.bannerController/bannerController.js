@@ -47,6 +47,7 @@
 						{ expires: 7, path: '/' }
 					);
 				}
+  <<<<<<< sandbox/VarnishEndpoint
 
 				var bannerDispatchQuery = {
 					userlang: mw.config.get( 'wgUserLanguage' ),
@@ -64,6 +65,78 @@
 					+ '?' + $.param( queryParams );
 				var bannerScript = '<script src="' + mw.html.escape( scriptUrl ) + '"></script>';
 				$( '#centralNotice' ).prepend( bannerScript );
+  =======
+			},
+			loadBannerList: function ( geoOverride ) {
+				var geoLocation,
+					anonymous = ( mw.config.get( 'wgUserName' ) === null );
+
+				if ( geoOverride ) {
+					geoLocation = geoOverride; // override the geo info
+				} else {
+					geoLocation = Geo.country; // pull the geo info
+				}
+
+				// To deal with bucketing we first have to have all our buckets! So dig in the
+				// cookie jar or make them.
+				var bucket = $.cookie( 'centralnotice_bucket' );
+				if ( bucket == null ) {
+					bucket = Math.round( Math.random() );
+					$.cookie(
+						'centralnotice_bucket', bucket,
+						{ expires: 7, path: '/' }
+					);
+				}
+
+				// Prevent loading banners on Special pages
+				if ( mw.config.get( 'wgNamespaceNumber' ) !== -1 ) {
+					$.ajax( {
+						url: mw.config.get( 'wgServer' ) + mw.config.get( 'wgScriptPath' ) + mw.config.get('wgScript'),
+						data: {
+							title: mw.config.get( 'wgNoticeBannerListLoader' ),
+							language: mw.config.get( 'wgContentLanguage' ),
+							project: mw.config.get( 'wgNoticeProject' ),
+							country: geoLocation,
+							anonymous: anonymous,
+							bucket: bucket
+						},
+						dataType: 'json'
+					}).done( mw.centralNotice.chooseBanner );
+				}
+			},
+			chooseBanner: function ( bannerList ) {
+				var i, idx, rnd, count, groomedBannerList;
+
+				// Did we get anything useful from the query?
+				if ( bannerList['centralnoticeallocations'] != null ) {
+					groomedBannerList = bannerList['centralnoticeallocations']['banners'];
+				} else {
+					return false;
+				}
+
+				// Obtain banner index
+				rnd = Math.random();
+				idx = -1;
+				count = 0;
+				for ( i = 0; i < groomedBannerList.length; i++ ) {
+					count += groomedBannerList[i].allocation;
+					if ( rnd < count ) {
+						idx = i;
+						break;
+					}
+				}
+
+				if ( idx == -1 ) {
+					return false;
+				}
+
+				// Load a random banner from our groomed list
+				mw.centralNotice.loadBanner(
+					groomedBannerList[idx].name,
+					groomedBannerList[idx].campaign,
+					( groomedBannerList[idx].fundraising ? 'fundraising' : 'default' )
+				);
+  >>>>>>> sandbox/adamw/dynamic_allocations_matrix
 			},
 			getQueryStringVariables: function () {
 				document.location.search.replace( /\??(?:([^=]+)=([^&]*)&?)/g, function ( str, p1, p2 ) {
